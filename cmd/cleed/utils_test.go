@@ -47,7 +47,7 @@ func createDefaultRSS() string {
 	return `<rss version="2.0">
 	<channel>
 		<title>RSS Feed</title>
-		<description>Feed description</description>
+		<description>RSS Feed description</description>
 		<link>https://rss-feed.com/</link>
 		<item>
 			<title>Item 1</title>
@@ -67,7 +67,7 @@ func createDefaultAtom() string {
 	return `<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 	<title>Atom Feed</title>
-	<subtitle>Feed description</subtitle>
+	<subtitle>Atom Feed description</subtitle>
 	<link href="https://atom-feed.com/"/>
 	<entry>
 		<title>Item 1</title>

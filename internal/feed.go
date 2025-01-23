@@ -307,51 +307,97 @@ func (f *TerminalFeed) ImportFromOPML(path, list string) error {
 	if err != nil {
 		return utils.NewInternalError("failed to parse OPML: " + err.Error())
 	}
-	urls := make([]string, 0, len(opml.Body.Oultines))
 	if len(opml.Body.Oultines) == 0 {
 		return utils.NewInternalError("no feeds found in OPML")
 	}
-	outlines := opml.Body.Oultines[0].Outlines
-	for _, o := range outlines {
-		urls = append(urls, o.XMLURL)
+	for _, listOutline := range opml.Body.Oultines {
+		urls := make([]string, 0, len(listOutline.Outlines))
+		for _, feedOutline := range listOutline.Outlines {
+			urls = append(urls, feedOutline.XMLURL)
+		}
+		if len(urls) == 0 {
+			continue
+		}
+		listName := list
+		if list == "" {
+			if listOutline.Text != "" {
+				listName = listOutline.Text
+			} else {
+				listName = "default"
+			}
+		}
+		err = f.storage.AddToList(urls, listName)
+		if err != nil {
+			return utils.NewInternalError("failed to save feeds: " + err.Error())
+		}
+		f.printer.Printf("added %s to list: %s\n", utils.Pluralize(int64(len(urls)), "feed"), listName)
 	}
-	err = f.storage.AddToList(urls, list)
-	if err != nil {
-		return utils.NewInternalError("failed to save feeds: " + err.Error())
-	}
-	f.printer.Printf("added %s to list: %s\n", utils.Pluralize(int64(len(urls)), "feed"), list)
 	return nil
 }
 
 func (f *TerminalFeed) ExportToOPML(path, list string) error {
-	feeds, err := f.storage.GetFeedsFromList(list)
-	if err != nil {
-		return utils.NewInternalError("failed to list feeds: " + err.Error())
-	}
-	if len(feeds) == 0 {
-		f.printer.Println("no feeds to export")
-		return nil
-	}
 	fo, err := os.Create(path)
 	if err != nil {
 		return utils.NewInternalError("failed to create file: " + err.Error())
 	}
 	defer fo.Close()
-	fmt.Fprintf(fo, `%s<opml version="1.0">
-  <head>
-    <title>%s</title>
-  </head>
-  <body>
-	<outline text="%s">
-`, xml.Header, list, list)
-	for i := range feeds {
-		fmt.Fprintf(fo, `      <outline xmlUrl="%s"/>
-`, feeds[i].Address)
+	fmt.Fprint(fo, xml.Header)
+	fmt.Fprint(fo, "<opml version=\"1.0\">\n  <head>\n")
+	fmt.Fprint(fo, "    <title>Export from ")
+	xml.EscapeText(fo, []byte(f.agent))
+	fmt.Fprint(fo, "</title>\n")
+	fmt.Fprintf(fo, "    <dateCreated>%s</dateCreated>\n", f.time.Now().Format(time.RFC1123Z))
+	fmt.Fprint(fo, "  </head>\n  <body>\n")
+
+	lists := make([]string, 0)
+	if list == "" {
+		lists, err = f.storage.LoadLists()
+		if err != nil {
+			return utils.NewInternalError("failed to load lists: " + err.Error())
+		}
+		if len(lists) == 0 {
+			lists = append(lists, "default")
+		}
+	} else {
+		lists = append(lists, list)
 	}
-	fmt.Fprint(fo, `	</outline>
-  </body>
-</opml>`)
-	f.printer.Printf("exported %s to %s\n", utils.Pluralize(int64(len(feeds)), "feed"), path)
+
+	totalFeedCount := int64(0)
+	for i := range lists {
+		feeds, err := f.storage.GetFeedsFromList(lists[i])
+		if err != nil {
+			return utils.NewInternalError("failed to list feeds: " + err.Error())
+		}
+		if len(feeds) == 0 {
+			continue
+		}
+		fmt.Fprint(fo, "    <outline text=\"")
+		xml.EscapeText(fo, []byte(lists[i]))
+		fmt.Fprint(fo, "\">\n")
+		for _, item := range feeds {
+			fmt.Fprint(fo, "      <outline")
+			feed, err := f.parseFeed(item.Address)
+			if err == nil {
+				if feed.Title != "" {
+					fmt.Fprint(fo, " text=\"")
+					xml.EscapeText(fo, []byte(feed.Title))
+					fmt.Fprint(fo, "\"")
+				}
+				if feed.Description != "" {
+					fmt.Fprint(fo, " description=\"")
+					xml.EscapeText(fo, []byte(feed.Description))
+					fmt.Fprint(fo, "\"")
+				}
+			}
+			fmt.Fprint(fo, " xmlUrl=\"")
+			xml.EscapeText(fo, []byte(item.Address))
+			fmt.Fprint(fo, "\" />\n")
+			totalFeedCount++
+		}
+		fmt.Fprint(fo, "    </outline>\n")
+	}
+	fmt.Fprint(fo, "  </body>\n</opml>")
+	f.printer.Printf("exported %s from %s to %s\n", utils.Pluralize(totalFeedCount, "feed"), utils.Pluralize(int64(len(lists)), "list"), path)
 	return nil
 }
 

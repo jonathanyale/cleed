@@ -7,19 +7,22 @@ import (
 type OPML struct {
 	XMLName xml.Name `xml:"opml"`
 	Version string   `xml:"version,attr"`
-	Head    Head     `xml:"head"`
-	Body    Body     `xml:"body"`
+	Head    OPMLHead `xml:"head"`
+	Body    OPMLBody `xml:"body"`
 }
 
-type Head struct {
+type OPMLHead struct {
 	Title string `xml:"title,omitempty"`
 }
 
-type Body struct {
-	Oultines []*Outline `xml:"outline"`
+type OPMLBody struct {
+	Text     string         `xml:"text,attr,omitempty"`
+	Oultines []*OPMLOutline `xml:"outline"`
 }
 
-type Outline struct {
-	Outlines []*Outline `xml:"outline"`
-	XMLURL   string     `xml:"xmlUrl,attr,omitempty"`
+type OPMLOutline struct {
+	Text        string         `xml:"text,attr,omitempty"`
+	Description string         `xml:"description,attr,omitempty"`
+	XMLURL      string         `xml:"xmlUrl,attr,omitempty"`
+	Outlines    []*OPMLOutline `xml:"outline"`
 }

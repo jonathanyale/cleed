@@ -7,8 +7,8 @@ import (
 func (r *Root) initList() {
 	cmd := &cobra.Command{
 		Use:   "list",
-		Short: "Show all lists or feeds in a list",
-		Long: `Show all lists or feeds in a list
+		Short: "Show all lists, feeds in a list or manage lists",
+		Long: `Show all lists, feeds in a list or manage lists
 
 Examples:
   # Show all lists
@@ -29,14 +29,20 @@ Examples:
   # Import feeds from a file
   cleed list mylist --import-from-file feeds.txt
 
-  # Import feeds from an OPML file
+  # Import feeds from an OPML file into a list
   cleed list mylist --import-from-opml feeds.opml
+
+  # Import feeds from an OPML file into multiple lists
+  cleed list --import-from-opml feeds.opml
 
   # Export feeds to a file
   cleed list mylist --export-to-file feeds.txt
 
-  # Export feeds to an OPML file
+  # Export feeds from a list to a file
   cleed list mylist --export-to-opml feeds.opml
+
+  # Export all feeds to an OPML file grouped by lists
+  cleed list --export-to-opml feeds.opml
 `,
 
 		RunE: r.RunList,
@@ -56,35 +62,39 @@ Examples:
 }
 
 func (r *Root) RunList(cmd *cobra.Command, args []string) error {
-	if len(args) == 0 {
+	list := ""
+	if len(args) > 0 {
+		list = args[0]
+	}
+	importFromOPML := cmd.Flag("import-from-opml").Value.String()
+	if importFromOPML != "" {
+		return r.feed.ImportFromOPML(importFromOPML, list)
+	}
+	exportToOPML := cmd.Flag("export-to-opml").Value.String()
+	if exportToOPML != "" {
+		return r.feed.ExportToOPML(exportToOPML, list)
+	}
+	if list == "" {
 		return r.feed.Lists()
 	}
 	rename := cmd.Flag("rename").Value.String()
 	if rename != "" {
-		return r.feed.RenameList(args[0], rename)
+		return r.feed.RenameList(list, rename)
 	}
 	merge := cmd.Flag("merge").Value.String()
 	if merge != "" {
-		return r.feed.MergeLists(args[0], merge)
+		return r.feed.MergeLists(list, merge)
 	}
 	if cmd.Flag("remove").Changed {
-		return r.feed.RemoveList(args[0])
+		return r.feed.RemoveList(list)
 	}
 	importFromFile := cmd.Flag("import-from-file").Value.String()
 	if importFromFile != "" {
-		return r.feed.ImportFromFile(importFromFile, args[0])
+		return r.feed.ImportFromFile(importFromFile, list)
 	}
 	exportToFile := cmd.Flag("export-to-file").Value.String()
 	if exportToFile != "" {
-		return r.feed.ExportToFile(exportToFile, args[0])
+		return r.feed.ExportToFile(exportToFile, list)
 	}
-	importFromOPML := cmd.Flag("import-from-opml").Value.String()
-	if importFromOPML != "" {
-		return r.feed.ImportFromOPML(importFromOPML, args[0])
-	}
-	exportToOPML := cmd.Flag("export-to-opml").Value.String()
-	if exportToOPML != "" {
-		return r.feed.ExportToOPML(exportToOPML, args[0])
-	}
-	return r.feed.ListFeeds(args[0])
+	return r.feed.ListFeeds(list)
 }

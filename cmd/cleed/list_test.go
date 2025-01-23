@@ -564,7 +564,7 @@ func Test_List_ImportFromOPML(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	importFilePath := path.Join(listsDir, "import.opml")
+	importFilePath := path.Join(configDir, "import.opml")
 	err = os.WriteFile(importFilePath,
 		[]byte(`<?xml version="1.0" encoding="UTF-8"?>
 <opml version="1.0">
@@ -606,7 +606,7 @@ func Test_List_ImportFromOPML(t *testing.T) {
 	}, items)
 }
 
-func Test_List_ExportToOPML(t *testing.T) {
+func Test_List_ImportFromOPML_Multiple_Lists(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
@@ -639,18 +639,125 @@ func Test_List_ExportToOPML(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	importFilePath := path.Join(configDir, "import.opml")
+	err = os.WriteFile(importFilePath,
+		[]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+  <head>
+    <title>test</title>
+  </head>
+  <body>
+	<outline text="test">
+      <outline xmlUrl="https://example1.com"/>
+      <outline xmlUrl="https://example2.com"/>
+      <outline xmlUrl="https://example3.com"/>
+	</outline>
+ 	<outline text="test 2">
+      <outline text="RSS Feed" description="RSS Feed description" xmlUrl="https://rss-feed.com/rss" />
+      <outline text="Atom Feed" description="Atom Feed description" xmlUrl="https://atom-feed.com/atom" />
+      <outline xmlUrl="https://test.com" />
+    </outline>
+  </body>
+</opml>`), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
 	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
 
-	exportPath := path.Join(listsDir, "export.opml")
+	os.Args = []string{"cleed", "list", "--import-from-opml", importFilePath}
+
+	err = root.Cmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, "added 3 feeds to list: test\nadded 3 feeds to list: test 2\n", out.String())
+
+	items, err := storage.GetFeedsFromList("test")
+	assert.NoError(t, err)
+	assert.Equal(t, []*_storage.ListItem{
+		{AddedAt: time.Unix(defaultCurrentTime.Unix(), 0), Address: "https://example.com"},
+		{AddedAt: time.Unix(defaultCurrentTime.Unix()+300, 0), Address: "https://test.com"},
+		{AddedAt: time.Unix(defaultCurrentTime.Unix(), 0), Address: "https://example1.com"},
+		{AddedAt: time.Unix(defaultCurrentTime.Unix(), 0), Address: "https://example2.com"},
+		{AddedAt: time.Unix(defaultCurrentTime.Unix(), 0), Address: "https://example3.com"},
+	}, items)
+
+	items, err = storage.GetFeedsFromList("test 2")
+	assert.NoError(t, err)
+	assert.Equal(t, []*_storage.ListItem{
+		{AddedAt: time.Unix(defaultCurrentTime.Unix(), 0), Address: "https://rss-feed.com/rss"},
+		{AddedAt: time.Unix(defaultCurrentTime.Unix(), 0), Address: "https://atom-feed.com/atom"},
+		{AddedAt: time.Unix(defaultCurrentTime.Unix(), 0), Address: "https://test.com"},
+	}, items)
+}
+
+func Test_List_ExportToOPML(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	timeMock := mocks.NewMockTime(ctrl)
+	timeMock.EXPECT().Now().Return(defaultCurrentTime).AnyTimes()
+
+	out := new(bytes.Buffer)
+	printer := internal.NewPrinter(nil, out, out)
+	storage := _storage.NewLocalStorage("cleed_test", timeMock)
+	defer localStorageCleanup(t, storage)
+
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	listsDir := path.Join(configDir, "cleed_test", "lists")
+	err = os.MkdirAll(listsDir, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = os.WriteFile(path.Join(listsDir, "test"),
+		[]byte(fmt.Sprintf("%d %s\n%d %s\n%d %s\n",
+			defaultCurrentTime.Unix(), "https://rss-feed.com/rss",
+			defaultCurrentTime.Unix()+300, "https://atom-feed.com/atom",
+			defaultCurrentTime.Unix()+500, "https://test.com",
+		),
+		), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cacheDir = path.Join(cacheDir, "cleed_test")
+	err = os.MkdirAll(cacheDir, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = storage.SaveFeedCache(bytes.NewBufferString(createDefaultRSS()), "https://rss-feed.com/rss")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = storage.SaveFeedCache(bytes.NewBufferString(createDefaultAtom()), "https://atom-feed.com/atom")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	feed := internal.NewTerminalFeed(timeMock, printer, storage)
+	feed.SetAgent("cleed/test")
+
+	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
+	assert.NoError(t, err)
+
+	exportPath := path.Join(configDir, "export.opml")
 	os.Args = []string{"cleed", "list", "test", "--export-to-opml", exportPath}
 
 	err = root.Cmd.Execute()
 	assert.NoError(t, err)
-	assert.Equal(t, fmt.Sprintf("exported 2 feeds to %s\n", exportPath), out.String())
+	assert.Equal(t, fmt.Sprintf("exported 3 feeds from 1 list to %s\n", exportPath), out.String())
 
 	b, err := os.ReadFile(exportPath)
 	if err != nil {
@@ -659,13 +766,116 @@ func Test_List_ExportToOPML(t *testing.T) {
 	assert.Equal(t, `<?xml version="1.0" encoding="UTF-8"?>
 <opml version="1.0">
   <head>
-    <title>test</title>
+    <title>Export from cleed/test</title>
+    <dateCreated>Mon, 01 Jan 2024 00:00:00 +0000</dateCreated>
   </head>
   <body>
-	<outline text="test">
-      <outline xmlUrl="https://example.com"/>
-      <outline xmlUrl="https://test.com"/>
-	</outline>
+    <outline text="test">
+      <outline text="RSS Feed" description="RSS Feed description" xmlUrl="https://rss-feed.com/rss" />
+      <outline text="Atom Feed" description="Atom Feed description" xmlUrl="https://atom-feed.com/atom" />
+      <outline xmlUrl="https://test.com" />
+    </outline>
+  </body>
+</opml>`, string(b))
+}
+
+func Test_List_ExportToOPML_Multiple_Lists(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	timeMock := mocks.NewMockTime(ctrl)
+	timeMock.EXPECT().Now().Return(defaultCurrentTime).AnyTimes()
+
+	out := new(bytes.Buffer)
+	printer := internal.NewPrinter(nil, out, out)
+	storage := _storage.NewLocalStorage("cleed_test", timeMock)
+	defer localStorageCleanup(t, storage)
+
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	listsDir := path.Join(configDir, "cleed_test", "lists")
+	err = os.MkdirAll(listsDir, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = os.WriteFile(path.Join(listsDir, "test"),
+		[]byte(fmt.Sprintf("%d %s\n%d %s\n%d %s\n",
+			defaultCurrentTime.Unix(), "https://rss-feed.com/rss",
+			defaultCurrentTime.Unix()+300, "https://atom-feed.com/atom",
+			defaultCurrentTime.Unix()+500, "https://test.com",
+		),
+		), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = os.WriteFile(path.Join(listsDir, "test 2"),
+		[]byte(fmt.Sprintf("%d %s\n%d %s\n%d %s\n",
+			defaultCurrentTime.Unix(), "https://rss-feed.com/rss",
+			defaultCurrentTime.Unix()+300, "https://atom-feed.com/atom",
+			defaultCurrentTime.Unix()+500, "https://test.com",
+		),
+		), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cacheDir = path.Join(cacheDir, "cleed_test")
+	err = os.MkdirAll(cacheDir, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = storage.SaveFeedCache(bytes.NewBufferString(createDefaultRSS()), "https://rss-feed.com/rss")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = storage.SaveFeedCache(bytes.NewBufferString(createDefaultAtom()), "https://atom-feed.com/atom")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	feed := internal.NewTerminalFeed(timeMock, printer, storage)
+	feed.SetAgent("cleed/test")
+
+	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
+	assert.NoError(t, err)
+
+	exportPath := path.Join(configDir, "export.opml")
+	os.Args = []string{"cleed", "list", "--export-to-opml", exportPath}
+
+	err = root.Cmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("exported 6 feeds from 2 lists to %s\n", exportPath), out.String())
+
+	b, err := os.ReadFile(exportPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, `<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+  <head>
+    <title>Export from cleed/test</title>
+    <dateCreated>Mon, 01 Jan 2024 00:00:00 +0000</dateCreated>
+  </head>
+  <body>
+    <outline text="test">
+      <outline text="RSS Feed" description="RSS Feed description" xmlUrl="https://rss-feed.com/rss" />
+      <outline text="Atom Feed" description="Atom Feed description" xmlUrl="https://atom-feed.com/atom" />
+      <outline xmlUrl="https://test.com" />
+    </outline>
+    <outline text="test 2">
+      <outline text="RSS Feed" description="RSS Feed description" xmlUrl="https://rss-feed.com/rss" />
+      <outline text="Atom Feed" description="Atom Feed description" xmlUrl="https://atom-feed.com/atom" />
+      <outline xmlUrl="https://test.com" />
+    </outline>
   </body>
 </opml>`, string(b))
 }
