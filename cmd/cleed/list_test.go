@@ -813,7 +813,7 @@ func Test_List_ExportToOPML_Multiple_Lists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = os.WriteFile(path.Join(listsDir, "test 2"),
+	err = os.WriteFile(path.Join(listsDir, url.QueryEscape("test 2")),
 		[]byte(fmt.Sprintf("%d %s\n%d %s\n%d %s\n",
 			defaultCurrentTime.Unix(), "https://rss-feed.com/rss",
 			defaultCurrentTime.Unix()+300, "https://atom-feed.com/atom",

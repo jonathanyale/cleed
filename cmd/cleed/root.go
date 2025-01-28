@@ -19,6 +19,7 @@ func Execute() {
 	storage := storage.NewLocalStorage("cleed", time)
 	feed := internal.NewTerminalFeed(time, printer, storage)
 	feed.SetAgent(fmt.Sprintf("cleed/v%s (github.com/radulucut/cleed)", Version))
+	feed.SetDefaultExploreRepository("https://github.com/radulucut/cleed-explore.git")
 	root, err := NewRoot(Version, time, printer, storage, feed)
 	if err != nil {
 		printer.ErrPrintf("Error: %v\n", err)
@@ -117,6 +118,7 @@ Examples:
 	root.initUnfollow()
 	root.initList()
 	root.initConfig()
+	root.initExplore()
 
 	return root, nil
 }

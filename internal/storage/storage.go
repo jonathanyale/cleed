@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"net/url"
 	"os"
 	"path"
 
@@ -8,7 +9,8 @@ import (
 )
 
 const (
-	listsDir = "lists"
+	listsDir   = "lists"
+	exploreDir = "explore"
 )
 
 type LocalStorage struct {
@@ -109,5 +111,13 @@ func (s *LocalStorage) joinListsDir(file string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return path.Join(base, file), nil
+	return path.Join(base, url.QueryEscape(file)), nil
+}
+
+func (s *LocalStorage) JoinExploreDir(file string) (string, error) {
+	base, err := s.JoinCacheDir(exploreDir)
+	if err != nil {
+		return "", err
+	}
+	return path.Join(base, url.QueryEscape(file)), nil
 }

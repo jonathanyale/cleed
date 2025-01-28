@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"fmt"
+	"net/url"
 	"os"
 	"slices"
 	"strconv"
@@ -147,7 +148,11 @@ func (s *LocalStorage) LoadLists() ([]string, error) {
 		if file.IsDir() {
 			continue
 		}
-		lists = append(lists, file.Name())
+		name, err := url.QueryUnescape(file.Name())
+		if err != nil {
+			name = file.Name()
+		}
+		lists = append(lists, name)
 	}
 	return lists, nil
 }

@@ -135,6 +135,41 @@ cleed config --color-range
 cleed config --summary=1
 ```
 
+#### Explore feeds
+
+```bash
+# Explore feeds from the default repository (https://github.com/radulucut/cleed-explore)
+cleed explore
+
+# Fetch the latest changes and explore feeds from the default repository
+cleed explore --update
+
+# Explore feeds from a repository
+cleed explore https://github.com/radulucut/cleed-explore.git
+
+# Limit the number of items to display from each list
+cleed explore --limit 5
+
+# Search for items (title, description)
+cleed explore --search "news"
+
+# Import all feeds into my feeds
+cleed explore --import --limit 0
+
+# Remove a repository
+cleed explore https://github.com/radulucut/cleed-explore.git --remove
+```
+
+> **Note**
+>
+> The explore command expects git to be installed in order to fetch the repository, and it will only look at `.opml` files when exploring a repository.
+
+#### Help
+
+```bash
+cleed --help
+```
+
 > **Color mapping**
 >
 > You can map the colors used in the feed reader to any color you want. This is useful if certain colors are not visible in your terminal based on the color scheme that you are using.

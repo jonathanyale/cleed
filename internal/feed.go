@@ -30,7 +30,8 @@ type TerminalFeed struct {
 	http    *http.Client
 	parser  *gofeed.Parser
 
-	agent string
+	agent                    string
+	defaultExploreRepository string
 }
 
 func NewTerminalFeed(
@@ -50,6 +51,10 @@ func NewTerminalFeed(
 
 func (f *TerminalFeed) SetAgent(agent string) {
 	f.agent = agent
+}
+
+func (f *TerminalFeed) SetDefaultExploreRepository(repository string) {
+	f.defaultExploreRepository = repository
 }
 
 func (f *TerminalFeed) DisplayConfig() error {
@@ -298,19 +303,14 @@ func (f *TerminalFeed) ExportToFile(path, list string) error {
 }
 
 func (f *TerminalFeed) ImportFromOPML(path, list string) error {
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return utils.NewInternalError("failed to read file: " + err.Error())
-	}
-	opml := &utils.OPML{}
-	err = xml.Unmarshal(b, opml)
+	opml, err := utils.ParseOPMLFile(path)
 	if err != nil {
 		return utils.NewInternalError("failed to parse OPML: " + err.Error())
 	}
-	if len(opml.Body.Oultines) == 0 {
+	if len(opml.Body.Outltines) == 0 {
 		return utils.NewInternalError("no feeds found in OPML")
 	}
-	for _, listOutline := range opml.Body.Oultines {
+	for _, listOutline := range opml.Body.Outltines {
 		urls := make([]string, 0, len(listOutline.Outlines))
 		for _, feedOutline := range listOutline.Outlines {
 			urls = append(urls, feedOutline.XMLURL)
@@ -380,10 +380,14 @@ func (f *TerminalFeed) ExportToOPML(path, list string) error {
 			if err == nil {
 				if feed.Title != "" {
 					fmt.Fprint(fo, " text=\"")
-					xml.EscapeText(fo, []byte(feed.Title))
+					xml.EscapeText(fo, []byte(strings.TrimSpace(feed.Title)))
 					fmt.Fprint(fo, "\"")
 				}
 				if feed.Description != "" {
+					feed.Description = strings.TrimSpace(feed.Description)
+					if len(feed.Description) > 200 {
+						feed.Description = feed.Description[:200] + "..."
+					}
 					fmt.Fprint(fo, " description=\"")
 					xml.EscapeText(fo, []byte(feed.Description))
 					fmt.Fprint(fo, "\"")
@@ -433,13 +437,7 @@ func (f *TerminalFeed) ShowCacheInfo() error {
 	f.printer.Print(runewidth.FillRight("URL", cellMax[0]))
 	f.printer.Println("  Last fetch           Fetch after")
 	slices.SortFunc(items, func(a, b *storage.CacheInfoItem) int {
-		if a.URL < b.URL {
-			return -1
-		}
-		if a.URL > b.URL {
-			return 1
-		}
-		return 0
+		return strings.Compare(a.URL, b.URL)
 	})
 	for i := range items {
 		f.printer.Print(runewidth.FillRight(items[i].URL, cellMax[0]))

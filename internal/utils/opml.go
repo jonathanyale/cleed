@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/xml"
+	"os"
 )
 
 type OPML struct {
@@ -12,12 +13,13 @@ type OPML struct {
 }
 
 type OPMLHead struct {
-	Title string `xml:"title,omitempty"`
+	Title       string `xml:"title,omitempty"`
+	DateCreated string `xml:"dateCreated,omitempty"`
 }
 
 type OPMLBody struct {
-	Text     string         `xml:"text,attr,omitempty"`
-	Oultines []*OPMLOutline `xml:"outline"`
+	Text      string         `xml:"text,attr,omitempty"`
+	Outltines []*OPMLOutline `xml:"outline"`
 }
 
 type OPMLOutline struct {
@@ -25,4 +27,17 @@ type OPMLOutline struct {
 	Description string         `xml:"description,attr,omitempty"`
 	XMLURL      string         `xml:"xmlUrl,attr,omitempty"`
 	Outlines    []*OPMLOutline `xml:"outline"`
+}
+
+func ParseOPMLFile(path string) (*OPML, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	opml := &OPML{}
+	err = xml.Unmarshal(b, opml)
+	if err != nil {
+		return nil, err
+	}
+	return opml, nil
 }
