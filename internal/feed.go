@@ -44,9 +44,7 @@ func NewTerminalFeed(
 		printer: printer,
 		storage: storage,
 
-		http: &http.Client{
-			Timeout: 1 * time.Minute,
-		},
+		http:   &http.Client{},
 		parser: gofeed.NewParser(),
 	}
 }
@@ -65,6 +63,8 @@ func (f *TerminalFeed) DisplayConfig() error {
 		return utils.NewInternalError("failed to load config: " + err.Error())
 	}
 	f.printer.Println("User-Agent:", config.UserAgent)
+	f.printer.Println("Timeout:", config.Timeout)
+	f.printer.Println("Batch size:", config.BatchSize)
 	styling := "default"
 	if config.Styling == 0 {
 		styling = "enabled"
@@ -82,6 +82,34 @@ func (f *TerminalFeed) DisplayConfig() error {
 		summary = "enabled"
 	}
 	f.printer.Println("Summary:", summary)
+	return nil
+}
+
+func (f *TerminalFeed) SetTimeout(timeout uint) error {
+	config, err := f.storage.LoadConfig()
+	if err != nil {
+		return utils.NewInternalError("failed to load config: " + err.Error())
+	}
+	config.Timeout = timeout
+	err = f.storage.SaveConfig()
+	if err != nil {
+		return utils.NewInternalError("failed to save config: " + err.Error())
+	}
+	f.printer.Println("timeout was updated")
+	return nil
+}
+
+func (f *TerminalFeed) SetBatchSize(batchSize uint) error {
+	config, err := f.storage.LoadConfig()
+	if err != nil {
+		return utils.NewInternalError("failed to load config: " + err.Error())
+	}
+	config.BatchSize = batchSize
+	err = f.storage.SaveConfig()
+	if err != nil {
+		return utils.NewInternalError("failed to save config: " + err.Error())
+	}
+	f.printer.Println("batch size was updated")
 	return nil
 }
 
@@ -606,7 +634,11 @@ func (f *TerminalFeed) printSummary(s *RunSummary) {
 }
 
 func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, summary *RunSummary) ([]*FeedItem, error) {
+	f.http.Timeout = time.Duration(config.Timeout) * time.Second
 	err := f.setProxy(opts)
+	if err != nil {
+		return nil, err
+	}
 	lists := make([]string, 0)
 	if opts.List != "" {
 		lists = append(lists, opts.List)
@@ -630,6 +662,7 @@ func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, s
 	}
 	mx := sync.Mutex{}
 	wg := sync.WaitGroup{}
+	wgBatchSize := uint(0)
 	items := make([]*FeedItem, 0)
 	feedColorMap := make(map[string]uint8)
 	for url := range feeds {
@@ -643,6 +676,7 @@ func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, s
 			cacheInfo[url] = ci
 		}
 		wg.Add(1)
+		wgBatchSize++
 		go func(ci *storage.CacheInfoItem) {
 			defer wg.Done()
 			res, err := f.fetchFeed(ci, config)
@@ -695,7 +729,12 @@ func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, s
 			if res.FetchAfter.After(ci.FetchAfter) {
 				ci.FetchAfter = res.FetchAfter
 			}
+
 		}(ci)
+		if wgBatchSize == config.BatchSize {
+			wgBatchSize = 0
+			wg.Wait()
+		}
 	}
 	wg.Wait()
 	err = f.storage.SaveCacheInfo(cacheInfo)
