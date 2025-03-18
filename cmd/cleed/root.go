@@ -18,7 +18,6 @@ func Execute() {
 	printer := internal.NewPrinter(os.Stdin, os.Stdout, os.Stderr)
 	storage := storage.NewLocalStorage("cleed", time)
 	feed := internal.NewTerminalFeed(time, printer, storage)
-	feed.SetAgent(fmt.Sprintf("cleed/v%s (github.com/radulucut/cleed)", Version))
 	feed.SetDefaultExploreRepository("https://github.com/radulucut/cleed-explore.git")
 	root, err := NewRoot(Version, time, printer, storage, feed)
 	if err != nil {
@@ -62,12 +61,17 @@ func NewRoot(
 		return nil, fmt.Errorf("failed to initialize storage: %v", err)
 	}
 
+	feed.SetVersion(root.version)
+
 	config, err := root.storage.LoadConfig()
 	if err != nil {
 		return nil, fmt.Errorf("failed to load config: %v", err)
 	}
 	if config.Styling != 0 {
 		root.printer.SetStyling(config.Styling == 1)
+	}
+	if config.UserAgent == "" {
+		config.UserAgent = fmt.Sprintf("cleed/v%s (github.com/radulucut/cleed)", root.version)
 	}
 
 	root.Cmd = &cobra.Command{

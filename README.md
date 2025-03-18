@@ -116,6 +116,9 @@ cleed list mylist --export-to-opml feeds.opml
 # Display configuration
 cleed config
 
+# Set the user agent
+cleed config --user-agent="My User Agent"
+
 # Disable styling
 cleed config --styling=2
 
@@ -134,6 +137,12 @@ cleed config --color-range
 # Enable run summary
 cleed config --summary=1
 ```
+
+> **Color mapping**
+>
+> You can map the colors used in the feed reader to any color you want. This is useful if certain colors are not visible in your terminal based on the color scheme that you are using.
+>
+> Run `cleed config --color-range` to see the color range and map the colors that you want using the `cleed config --map-colors` command.
 
 #### Explore feeds
 
@@ -169,9 +178,3 @@ cleed explore https://github.com/radulucut/cleed-explore.git --remove
 ```bash
 cleed --help
 ```
-
-> **Color mapping**
->
-> You can map the colors used in the feed reader to any color you want. This is useful if certain colors are not visible in your terminal based on the color scheme that you are using.
->
-> Run `cleed config --color-range` to see the color range and map the colors that you want using the `cleed config --map-colors` command.

@@ -56,7 +56,6 @@ func Test_Explore(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 	feed.SetDefaultExploreRepository("repo")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
@@ -138,7 +137,6 @@ func Test_Explore_Custom(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 	feed.SetDefaultExploreRepository("repo")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
@@ -215,7 +213,6 @@ func Test_Explore_Limit(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 	feed.SetDefaultExploreRepository("repo")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
@@ -282,7 +279,6 @@ func Test_Explore_Search(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 	feed.SetDefaultExploreRepository("repo")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
@@ -345,7 +341,6 @@ func Test_Explore_Import(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 	feed.SetDefaultExploreRepository("repo")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
@@ -422,7 +417,6 @@ func Test_Explore_Import_With_Limit(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 	feed.SetDefaultExploreRepository("repo")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
@@ -496,7 +490,6 @@ func Test_Explore_Remove(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 	feed.SetDefaultExploreRepository("repo")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)

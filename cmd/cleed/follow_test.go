@@ -27,7 +27,6 @@ func Test_Follow_Default(t *testing.T) {
 	defer localStorageCleanup(t, storage)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -73,7 +72,6 @@ func Test_Follow_Custom_List(t *testing.T) {
 	defer localStorageCleanup(t, storage)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -116,7 +114,6 @@ func Test_Follow_Invalid_URL(t *testing.T) {
 	defer localStorageCleanup(t, storage)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)

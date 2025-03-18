@@ -14,6 +14,9 @@ Examples:
   # Display configuration
   cleed config
 
+  # Set the user agent
+  cleed config --user-agent="My User Agent"
+
   # Disable styling
   cleed config --styling=2
 
@@ -40,6 +43,7 @@ Examples:
 	flags.Uint8("summary", 0, "disable or enable summary (0: disable, 1: enable)")
 	flags.String("map-colors", "", "map colors to other colors, e.g. 0:230,1:213. Use --color-range to check available colors")
 	flags.Bool("color-range", false, "display color range. Useful for finding colors to map")
+	flags.String("user-agent", "", "set the user agent. Setting the value to '-' will not send the user agent")
 
 	r.Cmd.AddCommand(cmd)
 }
@@ -65,6 +69,9 @@ func (r *Root) RunConfig(cmd *cobra.Command, args []string) error {
 	if cmd.Flag("color-range").Changed {
 		r.feed.DisplayColorRange()
 		return nil
+	}
+	if cmd.Flag("user-agent").Changed {
+		return r.feed.SetUserAgent(cmd.Flag("user-agent").Value.String())
 	}
 	return r.feed.DisplayConfig()
 }

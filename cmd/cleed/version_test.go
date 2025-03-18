@@ -24,7 +24,6 @@ func Test_Version(t *testing.T) {
 	storage := storage.NewLocalStorage("cleed_test", timeMock)
 	defer localStorageCleanup(t, storage)
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)

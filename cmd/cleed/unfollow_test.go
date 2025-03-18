@@ -49,7 +49,6 @@ func Test_Unfollow_Default(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -110,7 +109,6 @@ func Test_Unfollow_Custom_List(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -152,7 +150,6 @@ func Test_Unfollow_No_List(t *testing.T) {
 	defer localStorageCleanup(t, storage)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -243,7 +240,6 @@ func Test_Unfollow_Clean_Cache(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)

@@ -53,7 +53,6 @@ func Test_List(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -78,7 +77,6 @@ func Test_List_No_List(t *testing.T) {
 	defer localStorageCleanup(t, storage)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -124,7 +122,6 @@ func Test_List_Feeds(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -176,7 +173,6 @@ func Test_List_Rename(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -244,7 +240,6 @@ func Test_List_Merge(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -361,7 +356,6 @@ func Test_List_Remove(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -455,7 +449,6 @@ https://example2.com`), 0600)
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -510,7 +503,6 @@ func Test_List_ExportToFile(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -584,7 +576,6 @@ func Test_List_ImportFromOPML(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -664,7 +655,6 @@ func Test_List_ImportFromOPML_Multiple_Lists(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -747,7 +737,6 @@ func Test_List_ExportToOPML(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -766,7 +755,7 @@ func Test_List_ExportToOPML(t *testing.T) {
 	assert.Equal(t, `<?xml version="1.0" encoding="UTF-8"?>
 <opml version="1.0">
   <head>
-    <title>Export from cleed/test</title>
+    <title>Export from cleed/v0.1.0 (github.com/radulucut/cleed)</title>
     <dateCreated>Mon, 01 Jan 2024 00:00:00 +0000</dateCreated>
   </head>
   <body>
@@ -843,7 +832,6 @@ func Test_List_ExportToOPML_Multiple_Lists(t *testing.T) {
 	}
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -862,7 +850,7 @@ func Test_List_ExportToOPML_Multiple_Lists(t *testing.T) {
 	assert.Equal(t, `<?xml version="1.0" encoding="UTF-8"?>
 <opml version="1.0">
   <head>
-    <title>Export from cleed/test</title>
+    <title>Export from cleed/v0.1.0 (github.com/radulucut/cleed)</title>
     <dateCreated>Mon, 01 Jan 2024 00:00:00 +0000</dateCreated>
   </head>
   <body>

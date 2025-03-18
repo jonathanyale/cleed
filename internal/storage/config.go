@@ -11,11 +11,12 @@ const (
 )
 
 type Config struct {
-	Version  string          `json:"version"`
-	LastRun  time.Time       `json:"lastRun"`
-	Styling  uint8           `json:"styling"` // 0: default, 1: enabled, 2: disabled
-	Summary  uint8           `json:"summary"` // 0: disabled, 1: enabled
-	ColorMap map[uint8]uint8 `json:"colorMap"`
+	Version   string          `json:"version"`
+	UserAgent string          `json:"userAgent"`
+	LastRun   time.Time       `json:"lastRun"`
+	Styling   uint8           `json:"styling"` // 0: default, 1: enabled, 2: disabled
+	Summary   uint8           `json:"summary"` // 0: disabled, 1: enabled
+	ColorMap  map[uint8]uint8 `json:"colorMap"`
 }
 
 func (s *LocalStorage) LoadConfig() (*Config, error) {

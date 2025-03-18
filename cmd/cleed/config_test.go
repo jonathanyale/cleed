@@ -27,7 +27,6 @@ func Test_Config(t *testing.T) {
 	defer localStorageCleanup(t, storage)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -36,7 +35,8 @@ func Test_Config(t *testing.T) {
 
 	err = root.Cmd.Execute()
 	assert.NoError(t, err)
-	assert.Equal(t, `Styling: enabled
+	assert.Equal(t, `User-Agent: cleed/v0.1.0 (github.com/radulucut/cleed)
+Styling: enabled
 Color map:
 Summary: disabled
 `, out.String())
@@ -44,10 +44,46 @@ Summary: disabled
 	config, err := storage.LoadConfig()
 	assert.NoError(t, err)
 	expectedConfig := &_storage.Config{
-		Version:  "0.1.0",
-		LastRun:  time.Time{},
-		Styling:  0,
-		ColorMap: make(map[uint8]uint8),
+		Version:   "0.1.0",
+		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		LastRun:   time.Time{},
+		Styling:   0,
+		ColorMap:  make(map[uint8]uint8),
+	}
+	assert.Equal(t, expectedConfig, config)
+}
+
+func Test_Config_UserAgent(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	timeMock := mocks.NewMockTime(ctrl)
+	timeMock.EXPECT().Now().Return(defaultCurrentTime).AnyTimes()
+
+	out := new(bytes.Buffer)
+	printer := internal.NewPrinter(nil, out, out)
+	storage := _storage.NewLocalStorage("cleed_test", timeMock)
+	defer localStorageCleanup(t, storage)
+
+	feed := internal.NewTerminalFeed(timeMock, printer, storage)
+
+	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
+	assert.NoError(t, err)
+
+	os.Args = []string{"cleed", "config", "--user-agent", "My User Agent"}
+
+	err = root.Cmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, "User-Agent was updated\n", out.String())
+
+	config, err := storage.LoadConfig()
+	assert.NoError(t, err)
+	expectedConfig := &_storage.Config{
+		Version:   "0.1.0",
+		UserAgent: "My User Agent",
+		LastRun:   time.Time{},
+		Styling:   0,
+		ColorMap:  make(map[uint8]uint8),
 	}
 	assert.Equal(t, expectedConfig, config)
 }
@@ -65,7 +101,6 @@ func Test_Config_Styling(t *testing.T) {
 	defer localStorageCleanup(t, storage)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -79,10 +114,11 @@ func Test_Config_Styling(t *testing.T) {
 	config, err := storage.LoadConfig()
 	assert.NoError(t, err)
 	expectedConfig := &_storage.Config{
-		Version:  "0.1.0",
-		LastRun:  time.Time{},
-		Styling:  2,
-		ColorMap: make(map[uint8]uint8),
+		Version:   "0.1.0",
+		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		LastRun:   time.Time{},
+		Styling:   2,
+		ColorMap:  make(map[uint8]uint8),
 	}
 	assert.Equal(t, expectedConfig, config)
 }
@@ -100,7 +136,6 @@ func Test_Config_Summary(t *testing.T) {
 	defer localStorageCleanup(t, storage)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -114,11 +149,12 @@ func Test_Config_Summary(t *testing.T) {
 	config, err := storage.LoadConfig()
 	assert.NoError(t, err)
 	expectedConfig := &_storage.Config{
-		Version:  "0.1.0",
-		LastRun:  time.Time{},
-		Styling:  0,
-		Summary:  1,
-		ColorMap: make(map[uint8]uint8),
+		Version:   "0.1.0",
+		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		LastRun:   time.Time{},
+		Styling:   0,
+		Summary:   1,
+		ColorMap:  make(map[uint8]uint8),
 	}
 	assert.Equal(t, expectedConfig, config)
 }
@@ -136,7 +172,6 @@ func Test_Config_MapColors(t *testing.T) {
 	defer localStorageCleanup(t, storage)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -150,10 +185,11 @@ func Test_Config_MapColors(t *testing.T) {
 	config, err := storage.LoadConfig()
 	assert.NoError(t, err)
 	expectedConfig := &_storage.Config{
-		Version:  "0.1.0",
-		LastRun:  time.Time{},
-		Styling:  0,
-		ColorMap: map[uint8]uint8{1: 2, 3: 4},
+		Version:   "0.1.0",
+		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		LastRun:   time.Time{},
+		Styling:   0,
+		ColorMap:  map[uint8]uint8{1: 2, 3: 4},
 	}
 	assert.Equal(t, expectedConfig, config)
 }
@@ -178,7 +214,6 @@ func Test_Config_MapColors_RemoveColorMapping(t *testing.T) {
 	assert.NoError(t, err)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -192,10 +227,11 @@ func Test_Config_MapColors_RemoveColorMapping(t *testing.T) {
 	config, err = storage.LoadConfig()
 	assert.NoError(t, err)
 	expectedConfig := &_storage.Config{
-		Version:  "0.1.0",
-		LastRun:  time.Time{},
-		Styling:  0,
-		ColorMap: map[uint8]uint8{3: 4},
+		Version:   "0.1.0",
+		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		LastRun:   time.Time{},
+		Styling:   0,
+		ColorMap:  map[uint8]uint8{3: 4},
 	}
 	assert.Equal(t, expectedConfig, config)
 }
@@ -220,7 +256,6 @@ func Test_Config_MapColors_ClearColorMapping(t *testing.T) {
 	assert.NoError(t, err)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)
@@ -234,10 +269,11 @@ func Test_Config_MapColors_ClearColorMapping(t *testing.T) {
 	config, err = storage.LoadConfig()
 	assert.NoError(t, err)
 	expectedConfig := &_storage.Config{
-		Version:  "0.1.0",
-		LastRun:  time.Time{},
-		Styling:  0,
-		ColorMap: map[uint8]uint8{},
+		Version:   "0.1.0",
+		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		LastRun:   time.Time{},
+		Styling:   0,
+		ColorMap:  map[uint8]uint8{},
 	}
 	assert.Equal(t, expectedConfig, config)
 }
@@ -262,7 +298,6 @@ func Test_Config_ColorRange(t *testing.T) {
 	assert.NoError(t, err)
 
 	feed := internal.NewTerminalFeed(timeMock, printer, storage)
-	feed.SetAgent("cleed/test")
 
 	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
 	assert.NoError(t, err)

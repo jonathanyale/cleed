@@ -3,7 +3,6 @@ package internal
 import (
 	"bufio"
 	"compress/gzip"
-	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
@@ -30,27 +29,29 @@ type TerminalFeed struct {
 	http    *http.Client
 	parser  *gofeed.Parser
 
-	agent                    string
+	version                  string
 	defaultExploreRepository string
 }
 
 func NewTerminalFeed(
-	time utils.Time,
+	_time utils.Time,
 	printer *Printer,
 	storage *storage.LocalStorage,
 ) *TerminalFeed {
 	return &TerminalFeed{
-		time:    time,
+		time:    _time,
 		printer: printer,
 		storage: storage,
 
-		http:   &http.Client{},
+		http: &http.Client{
+			Timeout: 1 * time.Minute,
+		},
 		parser: gofeed.NewParser(),
 	}
 }
 
-func (f *TerminalFeed) SetAgent(agent string) {
-	f.agent = agent
+func (f *TerminalFeed) SetVersion(version string) {
+	f.version = version
 }
 
 func (f *TerminalFeed) SetDefaultExploreRepository(repository string) {
@@ -62,6 +63,7 @@ func (f *TerminalFeed) DisplayConfig() error {
 	if err != nil {
 		return utils.NewInternalError("failed to load config: " + err.Error())
 	}
+	f.printer.Println("User-Agent:", config.UserAgent)
 	styling := "default"
 	if config.Styling == 0 {
 		styling = "enabled"
@@ -79,6 +81,20 @@ func (f *TerminalFeed) DisplayConfig() error {
 		summary = "enabled"
 	}
 	f.printer.Println("Summary:", summary)
+	return nil
+}
+
+func (f *TerminalFeed) SetUserAgent(agent string) error {
+	config, err := f.storage.LoadConfig()
+	if err != nil {
+		return utils.NewInternalError("failed to load config: " + err.Error())
+	}
+	config.UserAgent = agent
+	err = f.storage.SaveConfig()
+	if err != nil {
+		return utils.NewInternalError("failed to save config: " + err.Error())
+	}
+	f.printer.Println("User-Agent was updated")
 	return nil
 }
 
@@ -344,7 +360,7 @@ func (f *TerminalFeed) ExportToOPML(path, list string) error {
 	fmt.Fprint(fo, xml.Header)
 	fmt.Fprint(fo, "<opml version=\"1.0\">\n  <head>\n")
 	fmt.Fprint(fo, "    <title>Export from ")
-	xml.EscapeText(fo, []byte(f.agent))
+	xml.EscapeText(fo, fmt.Appendf(nil, "cleed/v%s (github.com/radulucut/cleed)", f.version))
 	fmt.Fprint(fo, "</title>\n")
 	fmt.Fprintf(fo, "    <dateCreated>%s</dateCreated>\n", f.time.Now().Format(time.RFC1123Z))
 	fmt.Fprint(fo, "  </head>\n  <body>\n")
@@ -627,7 +643,7 @@ func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, s
 		wg.Add(1)
 		go func(ci *storage.CacheInfoItem) {
 			defer wg.Done()
-			res, err := f.fetchFeed(ci)
+			res, err := f.fetchFeed(ci, config)
 			if err != nil {
 				f.printer.ErrPrintf("failed to fetch feed: %s: %v\n", ci.URL, err)
 				return
@@ -710,19 +726,19 @@ type FetchResult struct {
 	FetchAfter time.Time
 }
 
-func (f *TerminalFeed) fetchFeed(feed *storage.CacheInfoItem) (*FetchResult, error) {
+func (f *TerminalFeed) fetchFeed(feed *storage.CacheInfoItem, config *storage.Config) (*FetchResult, error) {
 	if feed.FetchAfter.After(f.time.Now()) {
 		return &FetchResult{
 			Changed: false,
 		}, nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, "GET", feed.URL, nil)
+	req, err := http.NewRequest("GET", feed.URL, nil)
 	if err != nil {
 		return nil, utils.NewInternalError(fmt.Sprintf("failed to create request: %v", err))
 	}
-	req.Header.Set("User-Agent", f.agent)
+	if config.UserAgent != "-" {
+		req.Header.Set("User-Agent", config.UserAgent)
+	}
 	if feed.ETag != "" {
 		req.Header.Set("If-None-Match", feed.ETag)
 	}
