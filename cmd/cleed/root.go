@@ -2,6 +2,7 @@ package cleed
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"time"
 
@@ -100,6 +101,9 @@ Examples:
 
   # Search for items
   cleed --search "keyword" --limit 10
+
+  # Using a proxy
+  cleed --proxy socks5://user:password@proxy.example.com:8080
 `,
 		Version: version,
 		RunE:    root.RunRoot,
@@ -113,6 +117,7 @@ Examples:
 	flags.Uint("limit", 50, "limit the number of items to display")
 	flags.String("since", "", "display feeds since the last run (last), a specific date (e.g. 2024-01-01 12:03:04) or duration (e.g. 1d)")
 	flags.String("search", "", "search for items (title, categories)")
+	flags.String("proxy", "", "proxy to use for requests")
 	flags.Bool("config-path", false, "show the path to the config directory")
 	flags.Bool("cache-path", false, "show the path to the cache directory")
 	flags.Bool("cache-info", false, "show the cache information")
@@ -145,10 +150,19 @@ func (r *Root) RunRoot(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
+
 	opts := &internal.FeedOptions{
 		List:  cmd.Flag("list").Value.String(),
 		Limit: int(limit),
 		Since: since,
+	}
+	proxy := cmd.Flag("proxy").Value.String()
+	if proxy != "" {
+		url, err := url.Parse(proxy)
+		if err != nil {
+			return fmt.Errorf("failed to parse proxy URL: %v", err)
+		}
+		opts.Proxy = url
 	}
 	if cmd.Flag("search").Changed {
 		return r.feed.Search(cmd.Flag("search").Value.String(), opts)

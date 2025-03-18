@@ -20,6 +20,7 @@ import (
 	"github.com/mmcdole/gofeed"
 	"github.com/radulucut/cleed/internal/storage"
 	"github.com/radulucut/cleed/internal/utils"
+	"golang.org/x/net/proxy"
 )
 
 type TerminalFeed struct {
@@ -467,6 +468,7 @@ type FeedOptions struct {
 	Query [][]rune
 	Limit int
 	Since time.Time
+	Proxy *url.URL
 }
 
 func (f *TerminalFeed) Search(query string, opts *FeedOptions) error {
@@ -604,7 +606,7 @@ func (f *TerminalFeed) printSummary(s *RunSummary) {
 }
 
 func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, summary *RunSummary) ([]*FeedItem, error) {
-	var err error
+	err := f.setProxy(opts)
 	lists := make([]string, 0)
 	if opts.List != "" {
 		lists = append(lists, opts.List)
@@ -798,6 +800,36 @@ func (f *TerminalFeed) parseRetryAfter(retryAfter string) time.Time {
 		return retryAfterTime
 	}
 	return f.time.Now().Add(5 * time.Minute)
+}
+
+func (f *TerminalFeed) setProxy(opts *FeedOptions) error {
+	if opts.Proxy == nil {
+		return nil
+	}
+	var transport *http.Transport
+	if strings.HasPrefix(strings.ToLower(opts.Proxy.Scheme), "socks5") {
+		var auth *proxy.Auth
+		if opts.Proxy.User != nil {
+			password, _ := opts.Proxy.User.Password()
+			auth = &proxy.Auth{
+				User:     opts.Proxy.User.Username(),
+				Password: password,
+			}
+		}
+		dialer, err := proxy.SOCKS5("tcp", opts.Proxy.Host, auth, proxy.Direct)
+		if err != nil {
+			return utils.NewInternalError("failed to create SOCKS5 dialer: " + err.Error())
+		}
+		transport = &http.Transport{
+			Dial: dialer.Dial,
+		}
+	} else {
+		transport = &http.Transport{
+			Proxy: http.ProxyURL(opts.Proxy),
+		}
+	}
+	f.http.Transport = transport
+	return nil
 }
 
 func parseMaxAge(cacheControl string) time.Duration {

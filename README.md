@@ -67,6 +67,9 @@ cleed --list my-list --limit 10
 
 # Search for items
 cleed --search "keyword" --limit 10
+
+# Using a proxy
+cleed --proxy socks5://user:password@proxy.example.com:8080
 ```
 
 #### Unfollow a feed
