@@ -174,6 +174,9 @@ cleed explore --search "news"
 # Import all feeds into my feeds
 cleed explore --import --limit 0
 
+# Import feeds from search results
+cleed explore --import --search "news"
+
 # Remove a repository
 cleed explore https://github.com/radulucut/cleed-explore.git --remove
 ```

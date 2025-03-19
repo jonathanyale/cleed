@@ -14,6 +14,7 @@ type ExploreOptions struct {
 	Update bool
 	Limit  int
 	Query  string
+	Import bool
 }
 
 func (f *TerminalFeed) ExploreRemove(url string) error {
@@ -68,6 +69,21 @@ func (f *TerminalFeed) ExploreSearch(opts *ExploreOptions) error {
 	}
 	if len(items) == 0 {
 		f.printer.Printf("no results found for %s\n", opts.Query)
+	}
+	if opts.Import {
+		urls := make([]string, 0)
+		for _, item := range items {
+			if item.Outline.XMLURL == "" {
+				continue
+			}
+			urls = append(urls, item.Outline.XMLURL)
+		}
+		err := f.storage.AddToList(urls, opts.Query)
+		if err != nil {
+			f.printer.Printf("failed to add feeds to list %s: %v\n", opts.Query, err)
+		}
+		f.printer.Printf("Imported %s into %s\n", utils.Pluralize(int64(len(items)), "feed"), opts.Query)
+		return nil
 	}
 	slices.SortFunc(items, func(a, b *ExploreSearchItem) int {
 		if a.Score == b.Score {

@@ -375,6 +375,73 @@ func Test_Explore_Import(t *testing.T) {
 	assert.Equal(t, expectedFeeds, feeds)
 }
 
+func Test_Explore_Import_Search(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	timeMock := mocks.NewMockTime(ctrl)
+	timeMock.EXPECT().Now().Return(defaultCurrentTime).AnyTimes()
+
+	out := new(bytes.Buffer)
+	printer := internal.NewPrinter(nil, out, out)
+	storage := _storage.NewLocalStorage("cleed_test", timeMock)
+	defer localStorageCleanup(t, storage)
+
+	tempRepository, err := storage.JoinExploreDir("repo")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	os.MkdirAll(tempRepository, 0755)
+
+	err = os.WriteFile(path.Join(tempRepository, "feeds.opml"), []byte(`<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+  <head>
+    <title>Export from cleed/test</title>
+    <dateCreated>Mon, 01 Jan 2024 00:00:00 +0000</dateCreated>
+  </head>
+  <body>
+    <outline text="test">
+      <outline text="RSS Feed" description="RSS Feed description" xmlUrl="https://rss-feed.com/rss" />
+      <outline text="Atom Feed" description="Atom Feed description" xmlUrl="https://atom-feed.com/atom" />
+      <outline xmlUrl="https://test.com" />
+    </outline>
+    <outline text="test 2">
+      <outline text="RSS Feed" description="RSS Feed description" xmlUrl="https://rss-feed.com/rss" />
+      <outline text="Atom Feed 2" description="Atom Feed 2 description" xmlUrl="https://atom-feed-2.com/atom" />
+    </outline>
+  </body>
+</opml>`), 0644)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	feed := internal.NewTerminalFeed(timeMock, printer, storage)
+	feed.SetDefaultExploreRepository("repo")
+
+	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
+	assert.NoError(t, err)
+
+	os.Args = []string{"cleed", "explore", "--search", "Atom", "--import"}
+	err = root.Cmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, "Imported 2 feeds into Atom\n", out.String())
+
+	lists, err := storage.LoadLists()
+	assert.NoError(t, err)
+
+	expectedLists := []string{"Atom"}
+	assert.Equal(t, expectedLists, lists)
+
+	feeds, err := storage.GetFeedsFromList("Atom")
+	assert.NoError(t, err)
+	expectedFeeds := []*_storage.ListItem{
+		{AddedAt: time.Unix(defaultCurrentTime.Unix(), 0), Address: "https://atom-feed.com/atom"},
+		{AddedAt: time.Unix(defaultCurrentTime.Unix(), 0), Address: "https://atom-feed-2.com/atom"},
+	}
+	assert.Equal(t, expectedFeeds, feeds)
+}
+
 func Test_Explore_Import_With_Limit(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

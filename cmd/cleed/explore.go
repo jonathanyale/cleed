@@ -30,6 +30,9 @@ Examples:
   # Import all feeds into my feeds
   cleed explore --import --limit 0
 
+  # Import feeds from search results
+  cleed explore --import --search "news"
+
   # Remove a repository
   cleed explore https://github.com/radulucut/cleed-explore.git --remove
 `,
@@ -70,6 +73,10 @@ func (r *Root) RunExplore(cmd *cobra.Command, args []string) error {
 	if opts.Query != "" {
 		if !cmd.Flag("limit").Changed {
 			opts.Limit = 25
+		}
+		opts.Import, err = cmd.Flags().GetBool("import")
+		if err != nil {
+			return err
 		}
 		return r.feed.ExploreSearch(opts)
 	}
