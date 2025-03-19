@@ -102,6 +102,9 @@ Examples:
   # Search for items
   cleed --search "keyword" --limit 10
 
+  # Search for items in cached feeds
+  cleed --search "keyword" -C
+
   # Using a proxy
   cleed --proxy socks5://user:password@proxy.example.com:8080
 `,
@@ -118,6 +121,7 @@ Examples:
 	flags.String("since", "", "display feeds since the last run (last), a specific date (e.g. 2024-01-01 12:03:04) or duration (e.g. 1d)")
 	flags.String("search", "", "search for items (title, categories)")
 	flags.String("proxy", "", "proxy to use for requests")
+	flags.BoolP("cached-only", "C", false, "display or search only from cached feeds")
 	flags.Bool("config-path", false, "show the path to the config directory")
 	flags.Bool("cache-path", false, "show the path to the cache directory")
 	flags.Bool("cache-info", false, "show the cache information")
@@ -150,11 +154,14 @@ func (r *Root) RunRoot(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
 	opts := &internal.FeedOptions{
 		List:  cmd.Flag("list").Value.String(),
 		Limit: int(limit),
 		Since: since,
+	}
+	opts.CachedOnly, err = cmd.Flags().GetBool("cached-only")
+	if err != nil {
+		return err
 	}
 	proxy := cmd.Flag("proxy").Value.String()
 	if proxy != "" {

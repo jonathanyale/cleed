@@ -54,17 +54,15 @@ func Test_Feed(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), server.URL+"/rss",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
 	err = os.WriteFile(path.Join(listsDir, "test"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), server.URL+"/atom",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -133,6 +131,94 @@ RSS Feed        • Item 1
 	assert.Equal(t, atom, string(b))
 }
 
+func Test_Feed_CachedOnly(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	timeMock := mocks.NewMockTime(ctrl)
+	timeMock.EXPECT().Now().Return(defaultCurrentTime).AnyTimes()
+
+	out := new(bytes.Buffer)
+	printer := internal.NewPrinter(nil, out, out)
+	storage := _storage.NewLocalStorage("cleed_test", timeMock)
+	defer localStorageCleanup(t, storage)
+
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	listsDir := path.Join(configDir, "cleed_test", "lists")
+	err = os.MkdirAll(listsDir, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rss := createDefaultRSS()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/rss" {
+			w.Header().Set("ETag", "123")
+			w.Write([]byte(rss))
+		}
+	}))
+	defer server.Close()
+
+	err = os.WriteFile(path.Join(listsDir, "default"),
+		fmt.Appendf(nil, "%d %s\n",
+			defaultCurrentTime.Unix(), server.URL+"/rss",
+		), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.WriteFile(path.Join(listsDir, "test"),
+		fmt.Appendf(nil, "%d %s\n",
+			defaultCurrentTime.Unix(), server.URL+"/atom",
+		), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cacheDir = path.Join(cacheDir, "cleed_test")
+	err = os.MkdirAll(cacheDir, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+	atom := createDefaultAtom()
+	err = storage.SaveFeedCache(bytes.NewBufferString(atom), server.URL+"/atom")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	storage.SaveCacheInfo(map[string]*_storage.CacheInfoItem{
+		server.URL + "/atom": {
+			URL:        server.URL + "/atom",
+			LastFetch:  time.Unix(defaultCurrentTime.Unix(), 0),
+			ETag:       "etag",
+			FetchAfter: time.Unix(defaultCurrentTime.Unix()+300, 0),
+		},
+	})
+
+	feed := internal.NewTerminalFeed(timeMock, printer, storage)
+
+	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
+	assert.NoError(t, err)
+
+	os.Args = []string{"cleed", "-C"}
+
+	err = root.Cmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, `Atom Feed      Item 2
+1594 days ago  https://atom-feed.com/item-2/
+
+Atom Feed      Item 1
+18 hours ago   https://atom-feed.com/item-1/
+
+`, out.String())
+}
+
 func Test_Feed_Search(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
@@ -188,9 +274,8 @@ func Test_Feed_Search(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), server.URL+"/rss",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -263,17 +348,15 @@ func Test_Feed_With_Summary(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), server.URL+"/rss",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
 	err = os.WriteFile(path.Join(listsDir, "test"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), server.URL+"/atom",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -372,17 +455,15 @@ func Test_Feed_Specific_List(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), server.URL+"/rss",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
 	}
 	err = os.WriteFile(path.Join(listsDir, "test"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), server.URL+"/atom",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -434,9 +515,8 @@ func Test_Feed_NotModified(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), server.URL,
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -504,9 +584,8 @@ func Test_Feed_CacheControl(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), server.URL,
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -569,9 +648,8 @@ func Test_Feed_RetryAfter(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), server.URL,
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -643,9 +721,8 @@ func Test_Feed_FetchAfter_Load_From_Cache(t *testing.T) {
 	}
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), "https://example.com",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -721,9 +798,8 @@ func Test_Feed_Limit(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n",
+		fmt.Appendf(nil, "%d %s\n",
 			defaultCurrentTime.Unix(), server.URL,
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -787,10 +863,9 @@ func Test_Feed_Since_Period(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n%d %s\n",
+		fmt.Appendf(nil, "%d %s\n%d %s\n",
 			defaultCurrentTime.Unix(), server.URL+"/rss",
 			defaultCurrentTime.Unix(), server.URL+"/atom",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -860,10 +935,9 @@ func Test_Feed_Since_Date(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n%d %s\n",
+		fmt.Appendf(nil, "%d %s\n%d %s\n",
 			defaultCurrentTime.Unix(), server.URL+"/rss",
 			defaultCurrentTime.Unix(), server.URL+"/atom",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -933,10 +1007,9 @@ func Test_Feed_Since_Last(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n%d %s\n",
+		fmt.Appendf(nil, "%d %s\n%d %s\n",
 			defaultCurrentTime.Unix(), server.URL+"/rss",
 			defaultCurrentTime.Unix(), server.URL+"/atom",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)
@@ -1026,10 +1099,9 @@ func Test_Feed_Since_Last_With_Summary(t *testing.T) {
 	defer server.Close()
 
 	err = os.WriteFile(path.Join(listsDir, "default"),
-		[]byte(fmt.Sprintf("%d %s\n%d %s\n",
+		fmt.Appendf(nil, "%d %s\n%d %s\n",
 			defaultCurrentTime.Unix(), server.URL+"/rss",
 			defaultCurrentTime.Unix(), server.URL+"/atom",
-		),
 		), 0600)
 	if err != nil {
 		t.Fatal(err)

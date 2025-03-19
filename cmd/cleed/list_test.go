@@ -768,6 +768,83 @@ func Test_List_ExportToOPML(t *testing.T) {
 </opml>`, string(b))
 }
 
+func Test_List_ExportToOPML_CachedOnly(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	timeMock := mocks.NewMockTime(ctrl)
+	timeMock.EXPECT().Now().Return(defaultCurrentTime).AnyTimes()
+
+	out := new(bytes.Buffer)
+	printer := internal.NewPrinter(nil, out, out)
+	storage := _storage.NewLocalStorage("cleed_test", timeMock)
+	defer localStorageCleanup(t, storage)
+
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	listsDir := path.Join(configDir, "cleed_test", "lists")
+	err = os.MkdirAll(listsDir, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = os.WriteFile(path.Join(listsDir, "test"),
+		fmt.Appendf(nil, "%d %s\n%d %s\n%d %s\n",
+			defaultCurrentTime.Unix(), "https://rss-feed.com/rss",
+			defaultCurrentTime.Unix()+300, "https://atom-feed.com/atom",
+			defaultCurrentTime.Unix()+500, "https://test.com",
+		), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cacheDir = path.Join(cacheDir, "cleed_test")
+	err = os.MkdirAll(cacheDir, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = storage.SaveFeedCache(bytes.NewBufferString(createDefaultRSS()), "https://rss-feed.com/rss")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	feed := internal.NewTerminalFeed(timeMock, printer, storage)
+
+	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
+	assert.NoError(t, err)
+
+	exportPath := path.Join(configDir, "export.opml")
+	os.Args = []string{"cleed", "list", "test", "--export-to-opml", exportPath, "-C"}
+
+	err = root.Cmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, fmt.Sprintf("exported 1 feed from 1 list to %s\n", exportPath), out.String())
+
+	b, err := os.ReadFile(exportPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, `<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+  <head>
+    <title>Export from cleed/v0.1.0 (github.com/radulucut/cleed)</title>
+    <dateCreated>Mon, 01 Jan 2024 00:00:00 +0000</dateCreated>
+  </head>
+  <body>
+    <outline text="test">
+      <outline text="RSS Feed" description="RSS Feed description" xmlUrl="https://rss-feed.com/rss" />
+    </outline>
+  </body>
+</opml>`, string(b))
+}
+
 func Test_List_ExportToOPML_Multiple_Lists(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

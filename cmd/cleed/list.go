@@ -43,6 +43,9 @@ Examples:
 
   # Export all feeds to an OPML file grouped by lists
   cleed list --export-to-opml feeds.opml
+
+  # Export only cached feeds to an OPML file
+  cleed list --export-to-opml feeds.opml -C
 `,
 
 		RunE: r.RunList,
@@ -57,6 +60,7 @@ Examples:
 	flags.String("import-from-opml", "", "import feeds from an OPML file")
 	flags.String("export-to-file", "", "export feeds to a file. Newline separated URLs")
 	flags.String("export-to-opml", "", "export feeds to an OPML file")
+	flags.BoolP("cached-only", "C", false, "include only cached feeds (opml export)")
 
 	r.Cmd.AddCommand(cmd)
 }
@@ -72,7 +76,11 @@ func (r *Root) RunList(cmd *cobra.Command, args []string) error {
 	}
 	exportToOPML := cmd.Flag("export-to-opml").Value.String()
 	if exportToOPML != "" {
-		return r.feed.ExportToOPML(exportToOPML, list)
+		cachedOnly, err := cmd.Flags().GetBool("cached-only")
+		if err != nil {
+			return err
+		}
+		return r.feed.ExportToOPML(exportToOPML, list, cachedOnly)
 	}
 	if list == "" {
 		return r.feed.Lists()

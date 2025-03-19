@@ -68,6 +68,9 @@ cleed --list my-list --limit 10
 # Search for items
 cleed --search "keyword" --limit 10
 
+# Search for items in cached feeds
+cleed --search "keyword" -C
+
 # Using a proxy
 cleed --proxy socks5://user:password@proxy.example.com:8080
 ```
@@ -111,6 +114,9 @@ cleed list mylist --export-to-file feeds.txt
 
 # Export feeds to an OPML file
 cleed list mylist --export-to-opml feeds.opml
+
+# Export only cached feeds to an OPML file
+cleed list --export-to-opml feeds.opml -C
 ```
 
 #### Configuration

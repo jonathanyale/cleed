@@ -221,7 +221,7 @@ func (f *TerminalFeed) ImportFromOPML(path, list string) error {
 	return nil
 }
 
-func (f *TerminalFeed) ExportToOPML(path, list string) error {
+func (f *TerminalFeed) ExportToOPML(path, list string, cachedOnly bool) error {
 	fo, err := os.Create(path)
 	if err != nil {
 		return utils.NewInternalError("failed to create file: " + err.Error())
@@ -261,8 +261,11 @@ func (f *TerminalFeed) ExportToOPML(path, list string) error {
 		xml.EscapeText(fo, []byte(lists[i]))
 		fmt.Fprint(fo, "\">\n")
 		for _, item := range feeds {
-			fmt.Fprint(fo, "      <outline")
 			feed, err := f.parseFeed(item.Address)
+			if cachedOnly && feed == nil {
+				continue
+			}
+			fmt.Fprint(fo, "      <outline")
 			if err == nil {
 				if feed.Title != "" {
 					fmt.Fprint(fo, " text=\"")
@@ -333,11 +336,12 @@ func (f *TerminalFeed) ShowCacheInfo() error {
 }
 
 type FeedOptions struct {
-	List  string
-	Query [][]rune
-	Limit int
-	Since time.Time
-	Proxy *url.URL
+	List       string
+	Query      [][]rune
+	Limit      int
+	Since      time.Time
+	Proxy      *url.URL
+	CachedOnly bool
 }
 
 func (f *TerminalFeed) Search(query string, opts *FeedOptions) error {
@@ -520,6 +524,17 @@ func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, s
 		wgBatchSize++
 		go func(ci *storage.CacheInfoItem) {
 			defer wg.Done()
+			if opts.CachedOnly {
+				feed, err := f.parseFeed(url)
+				if err != nil {
+					return
+				}
+				mx.Lock()
+				defer mx.Unlock()
+				items = f.processFeedItems(feed, items, config, opts, summary, feedColorMap, ci)
+				summary.FeedsCached++
+				return
+			}
 			res, err := f.fetchFeed(ci, config)
 			if err != nil {
 				f.printer.ErrPrintf("failed to fetch feed: %s: %v\n", ci.URL, err)
@@ -532,34 +547,7 @@ func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, s
 			}
 			mx.Lock()
 			defer mx.Unlock()
-			summary.ItemsCount += len(feed.Items)
-			color, ok := feedColorMap[feed.Title]
-			if !ok {
-				color = mapColor(uint8(len(feedColorMap)%256), config)
-				feedColorMap[feed.Title] = color
-			}
-			for _, feedItem := range feed.Items {
-				if feedItem.PublishedParsed == nil {
-					feedItem.PublishedParsed = &time.Time{}
-				}
-				if !opts.Since.IsZero() && feedItem.PublishedParsed.Before(opts.Since) {
-					continue
-				}
-				score := 0
-				if len(opts.Query) > 0 {
-					score = utils.Score(opts.Query, f.tokenizeItem(feedItem))
-				}
-				if score == -1 {
-					continue
-				}
-				items = append(items, &FeedItem{
-					Feed:      feed,
-					Item:      feedItem,
-					FeedColor: color,
-					IsNew:     feedItem.PublishedParsed.After(ci.LastFetch),
-					Score:     score,
-				})
-			}
+			items = f.processFeedItems(feed, items, config, opts, summary, feedColorMap, ci)
 			if res.Changed {
 				ci.ETag = res.ETag
 				ci.LastFetch = f.time.Now()
@@ -570,7 +558,6 @@ func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, s
 			if res.FetchAfter.After(ci.FetchAfter) {
 				ci.FetchAfter = res.FetchAfter
 			}
-
 		}(ci)
 		if wgBatchSize == config.BatchSize {
 			wgBatchSize = 0
@@ -600,6 +587,46 @@ func (f *TerminalFeed) parseFeed(url string) (*gofeed.Feed, error) {
 	}
 	defer fc.Close()
 	return f.parser.Parse(fc)
+}
+
+func (f *TerminalFeed) processFeedItems(
+	feed *gofeed.Feed,
+	items []*FeedItem,
+	config *storage.Config,
+	opts *FeedOptions,
+	summary *RunSummary,
+	feedColorMap map[string]uint8,
+	ci *storage.CacheInfoItem,
+) []*FeedItem {
+	summary.ItemsCount += len(feed.Items)
+	color, ok := feedColorMap[feed.Title]
+	if !ok {
+		color = mapColor(uint8(len(feedColorMap)%256), config)
+		feedColorMap[feed.Title] = color
+	}
+	for _, feedItem := range feed.Items {
+		if feedItem.PublishedParsed == nil {
+			feedItem.PublishedParsed = &time.Time{}
+		}
+		if !opts.Since.IsZero() && feedItem.PublishedParsed.Before(opts.Since) {
+			continue
+		}
+		score := 0
+		if len(opts.Query) > 0 {
+			score = utils.Score(opts.Query, f.tokenizeItem(feedItem))
+		}
+		if score == -1 {
+			continue
+		}
+		items = append(items, &FeedItem{
+			Feed:      feed,
+			Item:      feedItem,
+			FeedColor: color,
+			IsNew:     feedItem.PublishedParsed.After(ci.LastFetch),
+			Score:     score,
+		})
+	}
+	return items
 }
 
 type FetchResult struct {
