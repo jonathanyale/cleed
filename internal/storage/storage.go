@@ -55,8 +55,10 @@ func (s *LocalStorage) Init(version string) error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			s.config = &Config{
-				Version:  version,
-				ColorMap: make(map[uint8]uint8),
+				Version:   version,
+				Timeout:   30,
+				BatchSize: 100,
+				ColorMap:  make(map[uint8]uint8),
 			}
 			err = s.SaveConfig()
 		}

@@ -36,6 +36,8 @@ func Test_Config(t *testing.T) {
 	err = root.Cmd.Execute()
 	assert.NoError(t, err)
 	assert.Equal(t, `User-Agent: cleed/v0.1.0 (github.com/radulucut/cleed)
+Timeout: 30
+Batch size: 100
 Styling: enabled
 Color map:
 Summary: disabled
@@ -46,6 +48,8 @@ Summary: disabled
 	expectedConfig := &_storage.Config{
 		Version:   "0.1.0",
 		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		Timeout:   30,
+		BatchSize: 100,
 		LastRun:   time.Time{},
 		Styling:   0,
 		ColorMap:  make(map[uint8]uint8),
@@ -81,6 +85,8 @@ func Test_Config_UserAgent(t *testing.T) {
 	expectedConfig := &_storage.Config{
 		Version:   "0.1.0",
 		UserAgent: "My User Agent",
+		Timeout:   30,
+		BatchSize: 100,
 		LastRun:   time.Time{},
 		Styling:   0,
 		ColorMap:  make(map[uint8]uint8),
@@ -116,6 +122,8 @@ func Test_Config_Styling(t *testing.T) {
 	expectedConfig := &_storage.Config{
 		Version:   "0.1.0",
 		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		Timeout:   30,
+		BatchSize: 100,
 		LastRun:   time.Time{},
 		Styling:   2,
 		ColorMap:  make(map[uint8]uint8),
@@ -151,6 +159,8 @@ func Test_Config_Summary(t *testing.T) {
 	expectedConfig := &_storage.Config{
 		Version:   "0.1.0",
 		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		Timeout:   30,
+		BatchSize: 100,
 		LastRun:   time.Time{},
 		Styling:   0,
 		Summary:   1,
@@ -187,6 +197,8 @@ func Test_Config_MapColors(t *testing.T) {
 	expectedConfig := &_storage.Config{
 		Version:   "0.1.0",
 		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		Timeout:   30,
+		BatchSize: 100,
 		LastRun:   time.Time{},
 		Styling:   0,
 		ColorMap:  map[uint8]uint8{1: 2, 3: 4},
@@ -229,6 +241,8 @@ func Test_Config_MapColors_RemoveColorMapping(t *testing.T) {
 	expectedConfig := &_storage.Config{
 		Version:   "0.1.0",
 		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		Timeout:   30,
+		BatchSize: 100,
 		LastRun:   time.Time{},
 		Styling:   0,
 		ColorMap:  map[uint8]uint8{3: 4},
@@ -271,6 +285,8 @@ func Test_Config_MapColors_ClearColorMapping(t *testing.T) {
 	expectedConfig := &_storage.Config{
 		Version:   "0.1.0",
 		UserAgent: "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		Timeout:   30,
+		BatchSize: 100,
 		LastRun:   time.Time{},
 		Styling:   0,
 		ColorMap:  map[uint8]uint8{},
