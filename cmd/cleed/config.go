@@ -46,6 +46,7 @@ Examples:
 	flags.String("user-agent", "", "set the user agent. Setting the value to '-' will not send the user agent")
 	flags.Uint("batch-size", 100, "set the batch size for fetching feeds")
 	flags.Uint("timeout", 30, "set the timeout in seconds for fetching feeds")
+	flags.Uint8("future-items", 1, "show or hide future items (0: hide, 1: show)")
 
 	r.Cmd.AddCommand(cmd)
 }
@@ -88,6 +89,13 @@ func (r *Root) RunConfig(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		return r.feed.SetTimeout(timeout)
+	}
+	if cmd.Flag("future-items").Changed {
+		value, err := cmd.Flags().GetUint8("future-items")
+		if err != nil {
+			return err
+		}
+		return r.feed.UpdateFutureItems(value)
 	}
 	return r.feed.DisplayConfig()
 }

@@ -41,6 +41,11 @@ func (f *TerminalFeed) DisplayConfig() error {
 		summary = "enabled"
 	}
 	f.printer.Println("Summary:", summary)
+	futureItems := "show"
+	if config.HideFutureItems {
+		futureItems = "hide"
+	}
+	f.printer.Println("Future items:", futureItems)
 	return nil
 }
 
@@ -154,6 +159,26 @@ func (f *TerminalFeed) UpdateColorMap(mappings string) error {
 		return utils.NewInternalError("failed to save config: " + err.Error())
 	}
 	f.printer.Println("color map updated")
+	return nil
+}
+
+func (f *TerminalFeed) UpdateFutureItems(value uint8) error {
+	config, err := f.storage.LoadConfig()
+	if err != nil {
+		return utils.NewInternalError("failed to load config: " + err.Error())
+	}
+	if value == 0 {
+		config.HideFutureItems = true
+	} else if value == 1 {
+		config.HideFutureItems = false
+	} else {
+		return utils.NewInternalError("invalid value for future items")
+	}
+	err = f.storage.SaveConfig()
+	if err != nil {
+		return utils.NewInternalError("failed to save config: " + err.Error())
+	}
+	f.printer.Println("future items was updated")
 	return nil
 }
 

@@ -219,6 +219,82 @@ Atom Feed      Item 1
 `, out.String())
 }
 
+func Test_Feed_HideFutureItems(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	timeMock := mocks.NewMockTime(ctrl)
+	timeMock.EXPECT().Now().Return(defaultCurrentTime).AnyTimes()
+
+	out := new(bytes.Buffer)
+	printer := internal.NewPrinter(nil, out, out)
+	storage := _storage.NewLocalStorage("cleed_test", timeMock)
+	defer localStorageCleanup(t, storage)
+	storage.Init("0.1.0")
+
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	listsDir := path.Join(configDir, "cleed_test", "lists")
+	err = os.MkdirAll(listsDir, 0700)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	config, err := storage.LoadConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+	config.HideFutureItems = true
+	config.Summary = 1
+	err = storage.SaveConfig()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	items := []*FeedItem{
+		{
+			Title:     "Item 1",
+			Link:      "https://rss-feed.com/item-1/",
+			Published: defaultCurrentTime.Add(-time.Hour).Format(time.RFC3339),
+		},
+		{
+			Title:     "Item 2",
+			Link:      "https://rss-feed.com/item-2/",
+			Published: defaultCurrentTime.Add(time.Hour).Format(time.RFC3339),
+		},
+	}
+	rss := createRSS(items)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(rss))
+	}))
+	defer server.Close()
+
+	err = os.WriteFile(path.Join(listsDir, "default"),
+		fmt.Appendf(nil, "%d %s\n",
+			defaultCurrentTime.Unix(), server.URL+"/rss",
+		), 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	feed := internal.NewTerminalFeed(timeMock, printer, storage)
+
+	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
+	assert.NoError(t, err)
+
+	os.Args = []string{"cleed"}
+
+	err = root.Cmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, `RSS Feed    • Item 1
+1 hour ago  https://rss-feed.com/item-1/
+
+Displayed 1 item from 1 feed (0 cached, 1 fetched) with 2 items in 0.00s
+`, out.String())
+}
+
 func Test_Feed_Search(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

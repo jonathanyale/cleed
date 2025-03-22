@@ -445,11 +445,15 @@ func (f *TerminalFeed) processFeedItems(
 		color = mapColor(uint8(len(feedColorMap)%256), config)
 		feedColorMap[feed.Title] = color
 	}
+	currentTime := f.time.Now()
 	for _, feedItem := range feed.Items {
 		if feedItem.PublishedParsed == nil {
 			feedItem.PublishedParsed = &time.Time{}
 		}
 		if !opts.Since.IsZero() && feedItem.PublishedParsed.Before(opts.Since) {
+			continue
+		}
+		if config.HideFutureItems && feedItem.PublishedParsed.After(currentTime) {
 			continue
 		}
 		score := 0

@@ -17,10 +17,11 @@ type Config struct {
 	Timeout   uint   `json:"timeout"`   // in seconds
 	BatchSize uint   `json:"batchSize"` // number of feeds to fetch in a batch
 
-	LastRun  time.Time       `json:"lastRun"`
-	Styling  uint8           `json:"styling"` // 0: default, 1: enabled, 2: disabled
-	Summary  uint8           `json:"summary"` // 0: disabled, 1: enabled
-	ColorMap map[uint8]uint8 `json:"colorMap"`
+	LastRun         time.Time       `json:"lastRun"`
+	Styling         uint8           `json:"styling"` // 0: default, 1: enabled, 2: disabled
+	Summary         uint8           `json:"summary"` // 0: disabled, 1: enabled
+	ColorMap        map[uint8]uint8 `json:"colorMap"`
+	HideFutureItems bool            `json:"hideFutureItems"`
 }
 
 func (s *LocalStorage) LoadConfig() (*Config, error) {

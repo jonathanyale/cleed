@@ -41,6 +41,7 @@ Batch size: 100
 Styling: enabled
 Color map:
 Summary: disabled
+Future items: show
 `, out.String())
 
 	config, err := storage.LoadConfig()
@@ -329,4 +330,43 @@ func Test_Config_ColorRange(t *testing.T) {
 	}
 	expectedOutput += "\n"
 	assert.Equal(t, expectedOutput, out.String())
+}
+
+func Test_Config_FutureItems(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	timeMock := mocks.NewMockTime(ctrl)
+	timeMock.EXPECT().Now().Return(defaultCurrentTime).AnyTimes()
+
+	out := new(bytes.Buffer)
+	printer := internal.NewPrinter(nil, out, out)
+	storage := _storage.NewLocalStorage("cleed_test", timeMock)
+	defer localStorageCleanup(t, storage)
+
+	feed := internal.NewTerminalFeed(timeMock, printer, storage)
+
+	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
+	assert.NoError(t, err)
+
+	os.Args = []string{"cleed", "config", "--future-items", "0"}
+
+	err = root.Cmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, "future items was updated\n", out.String())
+
+	config, err := storage.LoadConfig()
+	assert.NoError(t, err)
+	expectedConfig := &_storage.Config{
+		Version:         "0.1.0",
+		UserAgent:       "cleed/v0.1.0 (github.com/radulucut/cleed)",
+		Timeout:         30,
+		BatchSize:       100,
+		LastRun:         time.Time{},
+		Styling:         0,
+		Summary:         0,
+		ColorMap:        make(map[uint8]uint8),
+		HideFutureItems: true,
+	}
+	assert.Equal(t, expectedConfig, config)
 }
