@@ -23,6 +23,10 @@ func (t *time) Now() _time.Time {
 
 func Relative(seconds int64) string {
 	var s string
+	isNegative := seconds < 0
+	if isNegative {
+		seconds = -seconds
+	}
 	if seconds < 60 {
 		s = Pluralize(seconds, "second")
 	} else if seconds < 3600 {
@@ -32,10 +36,10 @@ func Relative(seconds int64) string {
 	} else {
 		s = Pluralize(int64(math.Round(float64(seconds)/86400)), "day")
 	}
-	if seconds >= 0 {
-		return s + " ago"
+	if isNegative {
+		return "in " + s
 	}
-	return "in " + s
+	return s + " ago"
 }
 
 var durationMap = map[string]_time.Duration{

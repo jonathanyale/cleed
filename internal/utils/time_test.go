@@ -66,3 +66,23 @@ func Test_ParseDateTime(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, _time.Date(2024, 8, 13, 8, 1, 29, 0, _time.FixedZone("", 2*60*60)), tm)
 }
+
+func Test_Relative(t *testing.T) {
+	s := Relative(3 * 86400)
+	assert.Equal(t, "3 days ago", s)
+
+	s = Relative(3700)
+	assert.Equal(t, "1 hour ago", s)
+
+	s = Relative(3000)
+	assert.Equal(t, "50 minutes ago", s)
+
+	s = Relative(45)
+	assert.Equal(t, "45 seconds ago", s)
+
+	s = Relative(-100000)
+	assert.Equal(t, "in 1 day", s)
+
+	s = Relative(-30)
+	assert.Equal(t, "in 30 seconds", s)
+}
