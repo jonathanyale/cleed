@@ -348,10 +348,11 @@ func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, s
 	}
 	mx := sync.Mutex{}
 	wg := sync.WaitGroup{}
-	wgBatchSize := uint(0)
+	sem := make(chan struct{}, config.BatchSize)
 	items := make([]*FeedItem, 0)
 	feedColorMap := make(map[string]uint8)
 	for url := range feeds {
+		sem <- struct{}{}
 		ci := cacheInfo[url]
 		if ci == nil {
 			ci = &storage.CacheInfoItem{
@@ -362,9 +363,11 @@ func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, s
 			cacheInfo[url] = ci
 		}
 		wg.Add(1)
-		wgBatchSize++
 		go func(ci *storage.CacheInfoItem) {
 			defer wg.Done()
+			defer func() {
+				<-sem
+			}()
 			if opts.CachedOnly {
 				feed, err := f.parseFeed(url)
 				if err != nil {
@@ -400,10 +403,6 @@ func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, s
 				ci.FetchAfter = res.FetchAfter
 			}
 		}(ci)
-		if wgBatchSize == config.BatchSize {
-			wgBatchSize = 0
-			wg.Wait()
-		}
 	}
 	wg.Wait()
 	err = f.storage.SaveCacheInfo(cacheInfo)

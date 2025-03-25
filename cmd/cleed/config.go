@@ -44,7 +44,7 @@ Examples:
 	flags.String("map-colors", "", "map colors to other colors, e.g. 0:230,1:213. Use --color-range to check available colors")
 	flags.Bool("color-range", false, "display color range. Useful for finding colors to map")
 	flags.String("user-agent", "", "set the user agent. Setting the value to '-' will not send the user agent")
-	flags.Uint("batch-size", 100, "set the batch size for fetching feeds")
+	flags.Uint("batch-size", 100, "set the batch (queue) size for fetching feeds")
 	flags.Uint("timeout", 30, "set the timeout in seconds for fetching feeds")
 	flags.Uint8("future-items", 1, "show or hide future items (0: hide, 1: show)")
 
