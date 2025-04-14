@@ -145,6 +145,9 @@ cleed config --color-range
 
 # Enable run summary
 cleed config --summary=1
+
+# Set the miniflux token`
+cleed config --miniflux-token="your_token_here"`
 ```
 
 > **Color mapping**
@@ -152,6 +155,16 @@ cleed config --summary=1
 > You can map the colors used in the feed reader to any color you want. This is useful if certain colors are not visible in your terminal based on the color scheme that you are using.
 >
 > Run `cleed config --color-range` to see the color range and map the colors that you want using the `cleed config --map-colors` command.
+
+#### Miniflux
+
+```bash
+# Push feeds to Miniflux
+cleed miniflux push
+
+# Pull feeds from Miniflux
+cleed miniflux pull
+```
 
 #### Explore feeds
 
