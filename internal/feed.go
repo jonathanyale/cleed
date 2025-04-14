@@ -18,14 +18,16 @@ import (
 	"github.com/radulucut/cleed/internal/storage"
 	"github.com/radulucut/cleed/internal/utils"
 	"golang.org/x/net/proxy"
+	miniflux "miniflux.app/v2/client"
 )
 
 type TerminalFeed struct {
-	time    utils.Time
-	printer *Printer
-	storage *storage.LocalStorage
-	http    *http.Client
-	parser  *gofeed.Parser
+	time     utils.Time
+	printer  *Printer
+	storage  *storage.LocalStorage
+	http     *http.Client
+	parser   *gofeed.Parser
+	miniflux *miniflux.Client
 
 	version                  string
 	defaultExploreRepository string

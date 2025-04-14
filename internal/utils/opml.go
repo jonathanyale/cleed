@@ -34,8 +34,12 @@ func ParseOPMLFile(path string) (*OPML, error) {
 	if err != nil {
 		return nil, err
 	}
+	return ParseOPMLBytes(b)
+}
+
+func ParseOPMLBytes(data []byte) (*OPML, error) {
 	opml := &OPML{}
-	err = xml.Unmarshal(b, opml)
+	err := xml.Unmarshal(data, opml)
 	if err != nil {
 		return nil, err
 	}

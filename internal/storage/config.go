@@ -22,6 +22,8 @@ type Config struct {
 	Summary         uint8           `json:"summary"` // 0: disabled, 1: enabled
 	ColorMap        map[uint8]uint8 `json:"colorMap"`
 	HideFutureItems bool            `json:"hideFutureItems"`
+
+	MinifluxToken string `json:"minifluxToken"`
 }
 
 func (s *LocalStorage) LoadConfig() (*Config, error) {

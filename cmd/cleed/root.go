@@ -132,6 +132,7 @@ Examples:
 	root.initList()
 	root.initConfig()
 	root.initExplore()
+	root.initMiniflux()
 
 	return root, nil
 }

@@ -34,6 +34,9 @@ Examples:
 
   # Enable run summary
   cleed config --summary=1
+
+  # Set the miniflux token
+  cleed config --miniflux-token="your_token_here"
 `,
 		RunE: r.RunConfig,
 	}
@@ -47,6 +50,7 @@ Examples:
 	flags.Uint("batch-size", 100, "set the batch (queue) size for fetching feeds")
 	flags.Uint("timeout", 30, "set the timeout in seconds for fetching feeds")
 	flags.Uint8("future-items", 1, "show or hide future items (0: hide, 1: show)")
+	flags.String("miniflux-token", "", "set the miniflux token")
 
 	r.Cmd.AddCommand(cmd)
 }
@@ -96,6 +100,10 @@ func (r *Root) RunConfig(cmd *cobra.Command, args []string) error {
 			return err
 		}
 		return r.feed.UpdateFutureItems(value)
+	}
+	if cmd.Flag("miniflux-token").Changed {
+		token := cmd.Flag("miniflux-token").Value.String()
+		return r.feed.SetMinifluxToken(token)
 	}
 	return r.feed.DisplayConfig()
 }

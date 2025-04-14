@@ -46,6 +46,11 @@ func (f *TerminalFeed) DisplayConfig() error {
 		futureItems = "hide"
 	}
 	f.printer.Println("Future items:", futureItems)
+	if config.MinifluxToken != "" {
+		f.printer.Println("Miniflux token:", "******"+config.MinifluxToken[len(config.MinifluxToken)-6:])
+	} else {
+		f.printer.Println("Miniflux token:")
+	}
 	return nil
 }
 
@@ -190,4 +195,18 @@ func (f *TerminalFeed) DisplayColorRange() {
 	}
 	f.printer.Println()
 	f.printer.SetStyling(styling)
+}
+
+func (f *TerminalFeed) SetMinifluxToken(token string) error {
+	config, err := f.storage.LoadConfig()
+	if err != nil {
+		return utils.NewInternalError("failed to load config: " + err.Error())
+	}
+	config.MinifluxToken = token
+	err = f.storage.SaveConfig()
+	if err != nil {
+		return utils.NewInternalError("failed to save config: " + err.Error())
+	}
+	f.printer.Println("miniflux token was updated")
+	return nil
 }
