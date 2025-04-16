@@ -1299,6 +1299,44 @@ func Test_Cache_Dir(t *testing.T) {
 	assert.Equal(t, path.Join(cacheDir, "cleed_test")+"\n", out.String())
 }
 
+func Test_Config_And_Cache_Dir_With_Custom_Data_Path(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	timeMock := mocks.NewMockTime(ctrl)
+	timeMock.EXPECT().Now().Return(defaultCurrentTime).AnyTimes()
+
+	customPath := path.Join(os.TempDir(), "cleed_custom_path_test")
+	os.Setenv("CLEED_DATA_PATH", customPath)
+	defer os.Unsetenv("CLEED_DATA_PATH")
+	defer os.RemoveAll(customPath)
+
+	out := new(bytes.Buffer)
+	printer := internal.NewPrinter(nil, out, out)
+	storage := _storage.NewLocalStorage("cleed_test", timeMock)
+	defer localStorageCleanup(t, storage)
+
+	feed := internal.NewTerminalFeed(timeMock, printer, storage)
+
+	root, err := NewRoot("0.1.0", timeMock, printer, storage, feed)
+	assert.NoError(t, err)
+
+	os.Args = []string{"cleed", "--config-path"}
+
+	err = root.Cmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, path.Join(customPath, "config")+"\n", out.String())
+
+	root, err = NewRoot("0.1.0", timeMock, printer, storage, feed)
+	assert.NoError(t, err)
+	os.Args = []string{"cleed", "--cache-path"}
+	out.Reset()
+
+	err = root.Cmd.Execute()
+	assert.NoError(t, err)
+	assert.Equal(t, path.Join(customPath, "cache")+"\n", out.String())
+}
+
 func Test_Cache_Info(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()

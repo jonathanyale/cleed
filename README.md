@@ -146,7 +146,7 @@ cleed config --color-range
 # Enable run summary
 cleed config --summary=1
 
-# Set the miniflux token`
+# Set the miniflux token
 cleed config --miniflux-token="your_token_here"`
 ```
 
@@ -197,6 +197,10 @@ cleed explore https://github.com/radulucut/cleed-explore.git --remove
 > **Note**
 >
 > The explore command expects git to be installed in order to fetch the repository, and it will only look at `.opml` files when exploring a repository.
+
+#### Custom data path
+
+You can set the `CLEED_DATA_PATH` environment variable to specify a custom path for the data directory. All data will be stored in this directory (config, cache, etc).
 
 #### Help
 

@@ -9,6 +9,8 @@ import (
 )
 
 const (
+	dataPathOverrideName = "CLEED_DATA_PATH"
+
 	listsDir   = "lists"
 	exploreDir = "explore"
 )
@@ -93,6 +95,10 @@ func (s *LocalStorage) ClearAll() error {
 }
 
 func (s *LocalStorage) JoinCacheDir(file string) (string, error) {
+	pathOverride := os.Getenv(dataPathOverrideName)
+	if pathOverride != "" {
+		return path.Join(pathOverride, "cache", file), nil
+	}
 	base, err := os.UserCacheDir()
 	if err != nil {
 		return "", err
@@ -101,6 +107,10 @@ func (s *LocalStorage) JoinCacheDir(file string) (string, error) {
 }
 
 func (s *LocalStorage) JoinConfigDir(file string) (string, error) {
+	pathOverride := os.Getenv(dataPathOverrideName)
+	if pathOverride != "" {
+		return path.Join(pathOverride, "config", file), nil
+	}
 	base, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
