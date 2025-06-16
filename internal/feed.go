@@ -293,6 +293,10 @@ func (f *TerminalFeed) outputItems(
 		if fi.IsNew {
 			newMark = f.printer.ColorForeground("• ", highlightColor)
 		}
+		if strings.HasPrefix(fi.Item.Link, "/") {
+			baseUrl := strings.TrimSuffix(fi.Feed.Link, "/")
+			fi.Item.Link = baseUrl + fi.Item.Link
+		}
 		f.printer.Print(
 			f.printer.ColorForeground(runewidth.FillRight(runewidth.Truncate(fi.Feed.Title, cellMax[0], "..."), cellMax[0]), fi.FeedColor),
 			"  ",

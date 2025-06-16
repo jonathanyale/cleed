@@ -56,7 +56,7 @@ func createDefaultRSS() string {
 		</item>
 		<item>
 			<title>Item 2</title>
-			<link>https://rss-feed.com/item-2/</link>
+			<link>/item-2/</link>
 			<pubDate>Sat, 18 May 2019 21:00:00 GMT</pubDate>
 		</item>
 	</channel>
