@@ -1,17 +1,17 @@
 module github.com/radulucut/cleed
 
-go 1.24
+go 1.24.0
 
 require (
-	github.com/andybalholm/brotli v1.1.1
+	github.com/andybalholm/brotli v1.2.0
 	github.com/mattn/go-runewidth v0.0.16
 	github.com/mmcdole/gofeed v1.3.0
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.4.0
-	golang.org/x/net v0.39.0
-	golang.org/x/term v0.31.0
-	miniflux.app/v2 v2.2.7
+	golang.org/x/net v0.41.0
+	golang.org/x/term v0.32.0
+	miniflux.app/v2 v2.2.10
 )
 
 require (
@@ -26,7 +26,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
-	golang.org/x/sys v0.32.0 // indirect
-	golang.org/x/text v0.24.0 // indirect
+	golang.org/x/sys v0.33.0 // indirect
+	golang.org/x/text v0.26.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
