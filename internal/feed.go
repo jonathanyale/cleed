@@ -402,6 +402,7 @@ func (f *TerminalFeed) processFeeds(opts *FeedOptions, config *storage.Config, s
 				ci.ETag = res.ETag
 				ci.LastFetch = f.time.Now()
 				summary.FeedsFetched++
+				f.storage.SaveParsedFeedCache(feed, url)
 			} else {
 				summary.FeedsCached++
 			}
@@ -427,6 +428,9 @@ func (f *TerminalFeed) tokenizeItem(item *gofeed.Item) [][]rune {
 }
 
 func (f *TerminalFeed) parseFeed(url string) (*gofeed.Feed, error) {
+	if f.storage.HasParsedFeedCache(url) {
+		return f.storage.LoadParsedFeedCache(url)
+	}
 	fc, err := f.storage.OpenFeedCache(url)
 	if err != nil {
 		return nil, err
